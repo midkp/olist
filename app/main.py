@@ -1,25 +1,28 @@
 from fastapi import FastAPI
-from app.api.routes import router
-from app.core.logging_config import logger
- 
+from fastapi.middleware.cors import CORSMiddleware
+from app.core import config, logging_config
+from app.api.routes import router as api_router
+from app.api.csv_upload import router as csv_router
+import sys
+from pathlib import Path
 
- 
-# Create the FastAPI application
-app = FastAPI(
-    title=" FastAPI Service",
-    description="A service for checking leap year or a prime number.",
-    version="1.0.0",
-    #openapi_tags=tags_metadata,
-    contact={
-        "name": "Development Team",
-        "email": "support@example.com",
-    },
+sys.path.insert(0, str(Path(__file__).parent))
+
+app = FastAPI(title=config.settings.APP_NAME)
+
+# Allow all origins (for development; restrict this in production)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Change to specific domains in production
+    allow_credentials=True,
+    allow_methods=["*"],  # Allow all HTTP methods
+    allow_headers=["*"],  # Allow all headers
 )
- 
-# Include the API routes
-app.include_router(router)
- 
+
+# Include routers
+app.include_router(api_router)
+app.include_router(csv_router)
+
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=8000)
- 
+    uvicorn.run(app, host=config.settings.HOST, port=config.settings.PORT)
