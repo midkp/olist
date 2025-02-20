@@ -7,7 +7,7 @@ from app.core import database
 
 logger = logging.getLogger(__name__)
 
-client = OpenAI(api_key="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")  # Replace with your OpenAI API key
+client = OpenAI(api_key="API-KEY")  # Replace with your OpenAI API key
 
 class SQLService:
     @staticmethod
