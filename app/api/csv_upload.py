@@ -5,6 +5,7 @@ router = APIRouter(prefix="/api/v1", tags=["CSV Upload"])
 
 @router.post("/upload/{table_name}")
 async def upload_csv(table_name: str, file: UploadFile):
+    print(f"Received file: {file.filename}")  # Debugging line
     try:
         result = await CSVService.process_csv_upload(table_name, file)
         return {
