@@ -1,15 +1,20 @@
-# app/services/sql_service.py
-import sqlite3
-import pandas as pd
+"""Service for executing SQL queries."""
+
 import logging
+
+import pandas as pd
 from openai import OpenAI
+
 from app.core import database
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
+client = OpenAI(api_key=settings.OPENAI_API_KEY)
 
-client = OpenAI(api_key="API-KEY")  # Replace with your OpenAI API key
 
 class SQLService:
+    """Handles SQL query generation and execution."""
+
     @staticmethod
     def get_db_schema(conn):
         """Retrieve table names and schema from the SQLite database."""
@@ -39,25 +44,25 @@ class SQLService:
     @staticmethod
     def generate_sql_query(natural_language_query, schema):
         """Convert natural language query to SQL using OpenAI."""
-        schema_text = "\n".join([f"Table {table}: {[(col[1], col[2]) for col in columns]}" for table, columns in schema.items()])
-        
-        prompt = f"""
-        You are an SQL expert. Given the following database schema, convert the user's question into an SQL query.
-
-        {schema_text}
-
-        User Question: {natural_language_query}
-        SQL Query:
-        """
-
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",  # Adjust model as needed
-            messages=[
-                {"role": "system", "content": "You are an AI that generates SQL queries."},
-                {"role": "user", "content": prompt}
+        schema_text = "\n".join(
+            [
+                f"Table {table}: {[(col[1], col[2]) for col in columns]}"
+                for table, columns in schema.items()
             ]
         )
-
+        prompt = (
+            "You are an SQL expert. Given the following database schema, convert the "
+            "user's question into an SQL query.\n\n"
+            f"{schema_text}\n\n"
+            f"User Question: {natural_language_query}\nSQL Query:"
+        )
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "You are an AI that generates SQL queries."},
+                {"role": "user", "content": prompt},
+            ],
+        )
         sql_query = response.choices[0].message.content
         return SQLService.clean_sql_query(sql_query)
 
@@ -66,21 +71,15 @@ class SQLService:
         """Generate and execute SQL query, return results as JSON."""
         try:
             with database.get_db_connection() as conn:
-                # Get database schema
                 schema = SQLService.get_db_schema(conn)
-                
-                # Generate SQL query from natural language
                 sql_query = SQLService.generate_sql_query(natural_language_query, schema)
                 logger.info(f"Generated SQL Query: {sql_query}")
-
-                # Execute the query and fetch results
                 df = pd.read_sql_query(sql_query, conn)
-                result = df.to_dict(orient="records")  # Convert DataFrame to list of dictionaries
-
+                result = df.to_dict(orient="records")
                 return {
                     "status": "success",
                     "query": sql_query,
-                    "results": result
+                    "results": result,
                 }
         except Exception as e:
             logger.error(f"Error executing query: {e}")

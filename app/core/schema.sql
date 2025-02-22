@@ -1,1 +1,0 @@
-sqlite3 app/ecommerce_db.sql < app/core/schema.sql

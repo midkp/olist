@@ -1,86 +1,85 @@
-import sqlite3
-import io
-import csv
+"""API routes for uploading CSV data to various tables."""
+
 from fastapi import APIRouter, File, UploadFile
 
-router = APIRouter()
+from app.services.csv_service import CSVService
 
-def insert_csv_data_to_db(table_name, file):
-    # Open the file in text mode with the correct encoding
-    file_content = io.StringIO(file.read().decode('utf-8'))  # Convert bytes to text
-    reader = csv.DictReader(file_content)
-    
-    # Connect to the SQLite database
-    conn = sqlite3.connect('olist.db')  # Ensure this points to your correct database
-    cursor = conn.cursor()
-    
-    # Check if the table exists, and create it if it doesn't
-    cursor.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{table_name}'")
-    if not cursor.fetchone():
-        # Create table if it doesn't exist
-        columns = ', '.join([f"{col} TEXT" for col in reader.fieldnames])  # Assuming all fields are TEXT
-        create_table_query = f"CREATE TABLE {table_name} ({columns})"
-        cursor.execute(create_table_query)
-    
-    # Loop through each row in the CSV file and insert it into the database
-    for row in reader:
+router = APIRouter(prefix="/api/v1", tags=["CSV Upload"])
+DEFAULT_FILE = File(...)
 
-        print("Row Data:", row)  # Debugging line to print each row before inserting
-        
-        # Construct the insert query dynamically based on the CSV fieldnames
-        columns = ', '.join(row.keys())
-        placeholders = ', '.join('?' for _ in row)
-        insert_query = f"INSERT INTO {table_name} ({columns}) VALUES ({placeholders})"
-        
-        # Execute the insert query
-        cursor.execute(insert_query, tuple(row.values()))
-    
-    # Commit the transaction and close the connection
-    conn.commit()
-    conn.close()
-    return f"Data uploaded successfully to table {table_name}"
 
-# CSV upload endpoints for each table
 @router.post("/upload/customers")
-async def upload_olist_customers(file: UploadFile = File(...)):
-    return {"message": insert_csv_data_to_db("customers", file.file)}
+async def upload_customers(file: UploadFile = DEFAULT_FILE):
+    """Upload CSV data to the customers table."""
+    result = await CSVService.process_csv_upload("customers", file)
+    return {"message": "Uploaded to customers", **result}
+
 
 @router.post("/upload/orders")
-async def upload_olist_orders(file: UploadFile = File(...)):
-    return {"message": insert_csv_data_to_db("orders", file.file)}
+async def upload_orders(file: UploadFile = DEFAULT_FILE):
+    """Upload CSV data to the orders table."""
+    result = await CSVService.process_csv_upload("orders", file)
+    return {"message": "Uploaded to orders", **result}
+
 
 @router.post("/upload/order_items")
-async def upload_olist_order_items(file: UploadFile = File(...)):
-    return {"message": insert_csv_data_to_db("order_items", file.file)}
+async def upload_order_items(file: UploadFile = DEFAULT_FILE):
+    """Upload CSV data to the order_items table."""
+    result = await CSVService.process_csv_upload("order_items", file)
+    return {"message": "Uploaded to order_items", **result}
+
 
 @router.post("/upload/order_payments")
-async def upload_olist_order_payments(file: UploadFile = File(...)):
-    return {"message": insert_csv_data_to_db("order_payments", file.file)}
+async def upload_order_payments(file: UploadFile = DEFAULT_FILE):
+    """Upload CSV data to the order_payments table."""
+    result = await CSVService.process_csv_upload("order_payments", file)
+    return {"message": "Uploaded to order_payments", **result}
+
 
 @router.post("/upload/order_reviews")
-async def upload_olist_order_reviews(file: UploadFile = File(...)):
-    return {"message": insert_csv_data_to_db("order_reviews", file.file)}
+async def upload_order_reviews(file: UploadFile = DEFAULT_FILE):
+    """Upload CSV data to the order_reviews table."""
+    result = await CSVService.process_csv_upload("order_reviews", file)
+    return {"message": "Uploaded to order_reviews", **result}
+
 
 @router.post("/upload/products")
-async def upload_olist_products(file: UploadFile = File(...)):
-    return {"message": insert_csv_data_to_db("products", file.file)}
+async def upload_products(file: UploadFile = DEFAULT_FILE):
+    """Upload CSV data to the products table."""
+    result = await CSVService.process_csv_upload("products", file)
+    return {"message": "Uploaded to products", **result}
+
 
 @router.post("/upload/sellers")
-async def upload_olist_sellers(file: UploadFile = File(...)):
-    return {"message": insert_csv_data_to_db("sellers", file.file)}
+async def upload_sellers(file: UploadFile = DEFAULT_FILE):
+    """Upload CSV data to the sellers table."""
+    result = await CSVService.process_csv_upload("sellers", file)
+    return {"message": "Uploaded to sellers", **result}
+
 
 @router.post("/upload/geolocation")
-async def upload_olist_geolocation(file: UploadFile = File(...)):
-    return {"message": insert_csv_data_to_db("geolocation", file.file)}
+async def upload_geolocation(file: UploadFile = DEFAULT_FILE):
+    """Upload CSV data to the geolocation table."""
+    result = await CSVService.process_csv_upload("geolocation", file)
+    return {"message": "Uploaded to geolocation", **result}
+
 
 @router.post("/upload/marketing_qualified_leads")
-async def upload_olist_marketing_qualified_leads(file: UploadFile = File(...)):
-    return {"message": insert_csv_data_to_db("leads_qualified", file.file)}
+async def upload_marketing_qualified_leads(file: UploadFile = DEFAULT_FILE):
+    """Upload CSV data to the leads_qualified table."""
+    result = await CSVService.process_csv_upload("marketing_qualified_leads", file)
+    return {"message": "Uploaded to leads_qualified", **result}
+
 
 @router.post("/upload/closed_deals")
-async def upload_olist_closed_deals(file: UploadFile = File(...)):
-    return {"message": insert_csv_data_to_db("leads_closed", file.file)}
+async def upload_closed_deals(file: UploadFile = DEFAULT_FILE):
+    """Upload CSV data to the leads_closed table."""
+    result = await CSVService.process_csv_upload("closed_deals", file)
+    return {"message": "Uploaded to leads_closed", **result}
+
 
 @router.post("/upload/product_category_name_translation")
-async def upload_product_category_name_translation(file: UploadFile = File(...)):
-    return {"message": insert_csv_data_to_db("product_category_name_translation", file.file)}
+async def upload_product_category_name_translation(file: UploadFile = DEFAULT_FILE):
+    """Upload CSV data to the product_category_name_translation table."""
+    result = await CSVService.process_csv_upload("product_category_name_translation", file)
+    return {"message": "Uploaded to product_category_name_translation", **result}

@@ -1,0 +1,14 @@
+# pyproject.toml
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "D", "UP", "S", "B", "A", "C4", "T20", "Q"]
+ignore = ["D203", "D213", "S101"]  # Suppress S101 for tests
+fixable = ["ALL"]
+unfixable = []
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"
