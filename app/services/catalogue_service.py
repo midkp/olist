@@ -5,6 +5,7 @@ import json
 import logging
 
 import pytesseract
+from fastapi import UploadFile  # Added import
 from openai import OpenAI
 from PIL import Image
 
@@ -36,18 +37,19 @@ class CatalogueService:
             raise
 
     @staticmethod
-    def convert_text_to_specs(text):
-        """Convert raw text to structured JSON specs using OpenAI."""
+    def convert_text_to_specs_and_id(text):
+        """Convert raw text to structured JSON specs and extract product ID using OpenAI."""
         prompt = (
-            "You are an expert in extracting product specifications from text. "
+            "You are an expert in extracting product information from text. "
             "Given the following text extracted from a catalogue or image, "
-            "convert it into a structured JSON format representing mobile phone "
-            "specifications. Include keys like 'cpu', 'ram', 'storage', 'display', "
-            "'camera', etc., where applicable. If a specification is missing, "
-            "omit it from the JSON.\n\n"
+            "identify the product ID (e.g., model name or identifier) and "
+            "convert the specifications into a structured JSON format.\n\n"
+            "Include keys like 'cpu', 'ram', 'storage', 'display', 'camera', etc., "
+            "where applicable. If a specification is missing, omit it from the JSON.\n\n"
+            "Return a JSON object with 'product_id' and 'specifications' keys.\n\n"
             f"Text: {text}\n\n"
-            "JSON Output:"
         )
+
         try:
             response = client.chat.completions.create(
                 model="gpt-4o-mini",
@@ -59,19 +61,24 @@ class CatalogueService:
             json_str = response.choices[0].message.content.strip()
             if json_str.startswith("```json") and json_str.endswith("```"):
                 json_str = json_str[7:-3].strip()
-            specs = json.loads(json_str)
-            logger.info(f"Converted text to JSON specs: {specs}")
-            return specs
+            result = json.loads(json_str)
+            if "product_id" not in result or "specifications" not in result:
+                raise ValueError("OpenAI response missing 'product_id' or 'specifications'")
+            logger.info(
+                f"Extracted product_id: {result['product_id']}, specs: {result['specifications']}"
+            )
+            return result["product_id"], result["specifications"]
         except Exception as e:
-            logger.error(f"Error converting text to JSON specs: {e}")
+            logger.error(f"Error converting text to JSON specs and ID: {e}")
             raise
 
     @staticmethod
-    async def process_catalogue(file, product_id, product_category_name):
-        """Process catalogue/image and insert specs into products table."""
+    async def process_catalogue(file: UploadFile, product_category_name: str):
+        """Process catalogue/image, extract product ID and specs, and insert into products table."""
         try:
             text = CatalogueService.extract_text_from_image(file.file.read())
-            specs = CatalogueService.convert_text_to_specs(text)
+            product_id, specs = CatalogueService.convert_text_to_specs_and_id(text)
+
             with database.get_db_connection() as conn:
                 cursor = conn.cursor()
                 cursor.execute(

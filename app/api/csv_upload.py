@@ -36,15 +36,20 @@ async def execute_sql_query(request: QueryRequest):
         raise HTTPException(400, detail=str(e)) from e
 
 
-@router.post("/catalogue/{product_id}")
+@router.post("/catalogue")
 async def process_catalogue(
-    product_id: str,
-    file: UploadFile,
+    files: list[UploadFile],
     product_category_name: str = "mobile",
 ):
-    """Process a catalogue file and store specifications."""
+    """Process multiple catalogue image files.
+
+    Extract product IDs and specs, and store them in the database.
+    """
     try:
-        result = await CatalogueService.process_catalogue(file, product_id, product_category_name)
-        return result
+        results = []
+        for file in files:
+            result = await CatalogueService.process_catalogue(file, product_category_name)
+            results.append(result)
+        return {"status": "success", "results": results}
     except Exception as e:
         raise HTTPException(400, detail=str(e)) from e
